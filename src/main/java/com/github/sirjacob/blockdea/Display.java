@@ -1,4 +1,27 @@
-package space.mygeek.blockdea;
+/*
+ * The MIT License
+ *
+ * Copyright 2015 Sir Jacob.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+package com.github.sirjacob.blockdea;
 
 import java.awt.Desktop;
 import java.io.BufferedReader;
@@ -18,18 +41,30 @@ import org.json.simple.parser.ParseException;
 /**
  *
  * @author https://github.com/SirJacob
+ * @version 1.1 Changes:
+ * <p>
+ * 1.1: Added license to code, changed package name, added version tag, added
+ * changes, added comments/Javadoc, made getHiddenKey() deprecated, tweaked code
+ * to make it more efficient. (2015-11-16)
+ * <p>
+ * 1.0: First release. (2015-11-05)
  */
 public class Display extends javax.swing.JFrame {
 
     /**
      * Creates new form Display
      */
+    @SuppressWarnings("OverridableMethodCallInConstructor")
     public Display() {
         initComponents();
-        ptxtKey.setEchoChar('*');
-        setLocationRelativeTo(null);
+        ptxtKey.setEchoChar('*'); //Set the char to hide the API key with
+        setLocationRelativeTo(null); //Center window
     }
 
+    /**
+     * @param str Accepts URL (as a string)
+     * @return Returns the first line of the website.
+     */
     private String getURLData(String str) {
         try {
             URL url = new URL(str);
@@ -41,24 +76,30 @@ public class Display extends javax.swing.JFrame {
         return null;
     }
 
-    //Method getHiddenKey() is not used
+    /**
+     * @return Replaces all but the last 4 numbers/letters of the key with x.
+     * @deprecated Method getHiddenKey() is not used but should still work.
+     */
     private String getHiddenKey() {
         String key = getKey();
-        String keyEnding = "";
-        for (int i = 0; i < key.length() - 4; i++) {
-            keyEnding += "x";
-        }
-        keyEnding += key.substring(key.length() - 4, key.length());
-        return keyEnding;
-    }
-
-    private String getKeyEnding() {
-        String key = getKey();
         String hiddenKey = "";
-        hiddenKey += key.substring(key.length() - 4, key.length());
-        return hiddenKey;
+        for (int i = 0; i < key.length() - 4; i++) {
+            hiddenKey += "x";
+        }
+        return hiddenKey + key.substring(key.length() - 4);
     }
 
+    /**
+     *
+     * @return Returns the last 4 letters/numbers of the API key.
+     */
+    private String getKeyEnding() {
+        return getKey().substring(getKey().length() - 4);
+    }
+
+    /**
+     * Gets the status of the API key.
+     */
     @SuppressWarnings("UnusedAssignment")
     private void checkStatus() {
         Object obj = null;
@@ -92,6 +133,24 @@ public class Display extends javax.swing.JFrame {
         statusToList(rs, aks, st, v, credits, ct, ccs, ccsp);
     }
 
+    /**
+     * Takes args from checkStatus() and displays the values on the GUI list.
+     * Parameter descriptions provided by BDEA.
+     *
+     * @param requestStatus Describes if the server succeeded or found any
+     * problems.
+     * @param apiKeyStatus The simple answer if you should block or accept a
+     * domain.
+     * @param serverTime The local time of the server in the moment of your
+     * request. (Not represented)
+     * @param version The current version of the service.
+     * @param credits The number of remaining credits.
+     * @param creditsTime This timestamp shows you when the credits of your
+     * account have been recalculated. (Not represented)
+     * @param commercialCreditStatus This attribute indicates the status of
+     * remaining credits.
+     * @param commercialCreditPercent Remaining credits in percent.
+     */
     @SuppressWarnings("UnusedAssignment")
     private void statusToList(String requestStatus, String apiKeyStatus, String serverTime, String version, int credits, String creditsTime, String commercialCreditStatus, double commercialCreditPercent) {
         String customMsg = "";
@@ -144,6 +203,10 @@ public class Display extends javax.swing.JFrame {
         list.add(" ", lineCount++);
     }
 
+    /**
+     * Checks the supplied domain (getDomain()) and adds its status to the list.
+     * Possible statuses: OK, BLOCK, or FAILURE.
+     */
     private void checkDomain() {
         String response = getURLData("http://check.block-disposable-email.com/easyapi/txt/" + getKey() + "/" + getDomain());
         switch (response) {
@@ -159,16 +222,30 @@ public class Display extends javax.swing.JFrame {
         }
     }
 
+    /**
+     *
+     * @return Returns the current Epoch time.
+     */
     private String getTime() {
         Calendar cal = Calendar.getInstance();
         SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
         return sdf.format(cal.getTime());
     }
 
+    /**
+     *
+     * @return Returns the supplied domain from the GUI text input (txtDomain).
+     */
     private String getDomain() {
         return txtDomain.getText();
     }
 
+    /**
+     * Converts password text input into string and returns.
+     *
+     * @return Returns the supplied key from the GUI password text input
+     * (ptxtKey).
+     */
     private String getKey() {
         String key = "";
         for (char x : ptxtKey.getPassword()) {
@@ -177,10 +254,20 @@ public class Display extends javax.swing.JFrame {
         return key;
     }
 
+    /**
+     * Updates the GUI text input, txtDomain.
+     *
+     * @param domain Accepts new domain.
+     */
     private void setDomain(String domain) {
         txtDomain.setText(domain);
     }
 
+    /**
+     * Opens web browser and navigates to supplied URL.
+     *
+     * @param url Accepts URL as string.
+     */
     private void openURL(String url) {
         if (Desktop.isDesktopSupported()) {
             try {
@@ -191,6 +278,9 @@ public class Display extends javax.swing.JFrame {
         }
     }
 
+    /**
+     * Regulates what GUI buttons can be pressed/when they can be pressed.
+     */
     private void enableBtn() {
         if ((!"".equals(getKey())) && !"".equals(getDomain())) {
             btnQuery.setEnabled(true);
@@ -209,10 +299,21 @@ public class Display extends javax.swing.JFrame {
         }
     }
 
-    private void testBtnPress(String defaultDomain) {
-        setDomain(defaultDomain);
-        enableBtn();
-        checkDomain();
+    /**
+     * Preforms a free test check.
+     * <p>
+     * ok.bdea.cc returns OK
+     * <p>
+     * block.bdea.cc returns BLOCK
+     *
+     * @param testingDomain Accepts ok.bdea.cc or block.bdea.cc
+     */
+    private void testBtnPress(String testingDomain) {
+        if ("ok.bdea.cc".equals(testingDomain) || "block.bdea.cc".equals(testingDomain)) {
+            setDomain(testingDomain);
+            enableBtn();
+            checkDomain();
+        }
     }
 
     /**
@@ -241,7 +342,6 @@ public class Display extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Block DEA Client by Sir Jacob");
-        setPreferredSize(new java.awt.Dimension(500, 500));
 
         jLabel1.setText("Domain:");
 
@@ -347,7 +447,7 @@ public class Display extends javax.swing.JFrame {
                             .addComponent(jLabel2))
                         .addGap(7, 7, 7)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(txtDomain, javax.swing.GroupLayout.DEFAULT_SIZE, 621, Short.MAX_VALUE)
+                            .addComponent(txtDomain, javax.swing.GroupLayout.DEFAULT_SIZE, 185, Short.MAX_VALUE)
                             .addComponent(ptxtKey))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
@@ -374,7 +474,7 @@ public class Display extends javax.swing.JFrame {
                     .addComponent(lblManageAccount, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(lblPersonalStats, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(1, 1, 1)
-                .addComponent(list, javax.swing.GroupLayout.DEFAULT_SIZE, 242, Short.MAX_VALUE)
+                .addComponent(list, javax.swing.GroupLayout.DEFAULT_SIZE, 248, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -385,7 +485,6 @@ public class Display extends javax.swing.JFrame {
                         .addComponent(jLabel1)
                         .addComponent(btnTestBlock)
                         .addComponent(btnQuery)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(btnClrList)
@@ -401,7 +500,10 @@ public class Display extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
+    /**
+     *
+     * @param evt On button press clear the GUI list.
+     */
     private void btnClrListActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClrListActionPerformed
         list.removeAll();
     }//GEN-LAST:event_btnClrListActionPerformed
@@ -429,7 +531,10 @@ public class Display extends javax.swing.JFrame {
     private void btnCheckStatusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCheckStatusActionPerformed
         checkStatus();
     }//GEN-LAST:event_btnCheckStatusActionPerformed
-
+    /**
+     *
+     * @param evt On button press mask/unmask the API key text.
+     */
     private void tBtnShowKeyActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_tBtnShowKeyActionPerformed
         if (tBtnShowKey.isSelected()) {
             ptxtKey.setEchoChar((char) 0);
@@ -450,14 +555,13 @@ public class Display extends javax.swing.JFrame {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-        /* Set the Nimbus look and feel */
-        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+        /* Set the Windows look and feel */
+        //<editor-fold defaultstate="collapsed" desc="Look and feel setting code">
+        /* If Windows look and feel is not available, stay with the default.
          */
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Windows".equals(info.getName())) {
+                if ("Windows".equals(info.getName())) { //I like the Windows look and feel better than the Nimbus l&f.
                     javax.swing.UIManager.setLookAndFeel(info.getClassName());
                     break;
                 }

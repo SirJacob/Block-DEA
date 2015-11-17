@@ -34,6 +34,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JOptionPane;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -44,12 +45,27 @@ import org.json.simple.parser.ParseException;
  * @version 1.1 Changes:
  * <p>
  * 1.1: Added license to code, changed package name, added version tag, added
- * changes, added comments/Javadoc, made getHiddenKey() deprecated, tweaked code
- * to make it more efficient. (2015-11-16)
+ * changelog, added comments/Javadoc, made {@link #getHiddenKey()} deprecated,
+ * tweaked code to make it more efficient, added
+ * {@link #checkStatusAPIVersion(double)} along with
+ * {@link #SUPPORTED_STATUS_API_VERSION}, added {@link #showBadKeyError()},
+ * added {@link #DEFAULT_TITLE} and {@link #appendTitle(String)}, added import
+ * for JOptionPane, tweaked printing to GUI list in
+ * {@link #statusToList(String, String, String, double, int, String, String,double)}.
+ * (2015-11-16)
  * <p>
  * 1.0: First release. (2015-11-05)
  */
 public class Display extends javax.swing.JFrame {
+
+    /**
+     * Latest tested version of Status API that is supported.
+     */
+    private static final double SUPPORTED_STATUS_API_VERSION = 1.3;
+    /**
+     * Default title for the GUI window.
+     */
+    private static final String DEFAULT_TITLE = "Block DEA Client by Sir Jacob";
 
     /**
      * Creates new form Display
@@ -57,8 +73,46 @@ public class Display extends javax.swing.JFrame {
     @SuppressWarnings("OverridableMethodCallInConstructor")
     public Display() {
         initComponents();
-        ptxtKey.setEchoChar('*'); //Set the char to hide the API key with
-        setLocationRelativeTo(null); //Center window
+        ptxtKey.setEchoChar('*'); //Hide the API key with this char.
+        setLocationRelativeTo(null); //Center the window.
+        setTitle(DEFAULT_TITLE); //Set the default window title.
+    }
+
+    /**
+     * Displays a JOptionPane that informs the user that there was a problem
+     * with their API key.
+     *
+     * @since 1.1
+     */
+    private void showBadKeyError() {
+        JOptionPane.showMessageDialog(this,
+                "It appears that your key is invalid, please check your API key and try again.",
+                "API Key Error",
+                JOptionPane.ERROR_MESSAGE);
+    }
+
+    /**
+     * Checks if the Status API version is the same as the
+     * {@link #SUPPORTED_STATUS_API_VERSION}.
+     *
+     * @since 1.1
+     * @param v Accepts current Status API version as double v.
+     */
+    private void checkStatusAPIVersion(double v) {
+        if (v != SUPPORTED_STATUS_API_VERSION) {
+            System.out.println("[WARNING] This program not been tested with the Status API version you are using!");
+            System.out.println("[WARNING] Current Status API Version: " + v);
+            System.out.println("[WARNING] Supported Status API Version: " + SUPPORTED_STATUS_API_VERSION);
+            appendTitle("Untested Status API Version!");
+        }
+    }
+
+    /**
+     * @since 1.1
+     * @param title Accepts text to append to the end of the window's title.
+     */
+    private void appendTitle(String title) {
+        setTitle(DEFAULT_TITLE + " | " + title);
     }
 
     /**
@@ -98,7 +152,8 @@ public class Display extends javax.swing.JFrame {
     }
 
     /**
-     * Gets the status of the API key.
+     * Gets the status of the API key. Preformed when Key (Checkmark) is pressed
+     * on the GUI.
      */
     @SuppressWarnings("UnusedAssignment")
     private void checkStatus() {
@@ -112,11 +167,22 @@ public class Display extends javax.swing.JFrame {
             return;
         }
         JSONObject jo = (JSONObject) obj;
-        //--------------------//
         String rs = (String) jo.get("request_status");
         String aks = (String) jo.get("apikeystatus");
+        /**
+         * Gets and checks the Status API version.
+         */
+        double v = Double.parseDouble((String) jo.get("version"));
+        checkStatusAPIVersion(v);
+        /**
+         * If the request status or the API key status are not ok then there is
+         * no reason to continue to attempt to get values from the JSON object.
+         */
+        if (!"ok".equals(rs) || !"active".equals(aks)) {
+            showBadKeyError();
+            return;
+        }
         String st = (String) jo.get("servertime");
-        String v = (String) jo.get("version");
         String temp_credits = (String) jo.get("credits");
         int credits = 0;
         if (temp_credits != null) {
@@ -129,7 +195,6 @@ public class Display extends javax.swing.JFrame {
         if (temp_commercial_credit_status_percent != null) {
             ccsp = Double.parseDouble(temp_commercial_credit_status_percent);
         }
-        //--------------------//
         statusToList(rs, aks, st, v, credits, ct, ccs, ccsp);
     }
 
@@ -152,29 +217,14 @@ public class Display extends javax.swing.JFrame {
      * @param commercialCreditPercent Remaining credits in percent.
      */
     @SuppressWarnings("UnusedAssignment")
-    private void statusToList(String requestStatus, String apiKeyStatus, String serverTime, String version, int credits, String creditsTime, String commercialCreditStatus, double commercialCreditPercent) {
+    private void statusToList(String requestStatus, String apiKeyStatus, String serverTime, double version, int credits, String creditsTime, String commercialCreditStatus, double commercialCreditPercent) {
         String customMsg = "";
-        String header1 = "═════ Status Request ═════";
-        String header2 = "══════════════════";
+        String header1 = "~~~~~ Key Check ~~~~~";
         int lineCount = 0;
-        list.add(" ", lineCount++);
-        list.add(header2, lineCount++);
         list.add(header1, lineCount++);
-        list.add(header2, lineCount++);
         list.add("Checking status on key... " + "(" + getKeyEnding() + ")", lineCount++);
         list.add("Request Status: " + requestStatus.toUpperCase() + ", Version: " + version + ", Time: " + getTime(), lineCount++);
-        switch (apiKeyStatus) {
-            case "fail":
-                customMsg = "Invalid Key";
-                break;
-            case "inactive":
-                customMsg = "Unactivated Key (Deactivated due to abuse?)";
-                break;
-            case "active":
-                customMsg = "Key OK";
-                break;
-        }
-        list.add("Key Status: " + apiKeyStatus.toUpperCase() + " :: " + customMsg, lineCount++);
+        list.add("Key Status: " + apiKeyStatus.toUpperCase(), lineCount++);
         customMsg = "";
         list.add("Credits Remaining: " + credits + " :: (Updated every 180 minutes)", lineCount++);
         if (commercialCreditStatus != null) {
@@ -200,18 +250,20 @@ public class Display extends javax.swing.JFrame {
             }
             customMsg = "";
         }
-        list.add(" ", lineCount++);
+        list.add(null, lineCount++);
     }
 
     /**
-     * Checks the supplied domain (getDomain()) and adds its status to the list.
-     * Possible statuses: OK, BLOCK, or FAILURE.
+     * Queries BDEA's EasyAPI (Simple Text Output Method) Checks the supplied
+     * domain (getDomain()) and adds its status to the list. Possible Responses:
+     * ok, block, fail_key, fail_server, fail_input_domain,
+     * fail_parameter_count, fail_key_low_credits (EasyAPI v0.2)
      */
     private void checkDomain() {
         String response = getURLData("http://check.block-disposable-email.com/easyapi/txt/" + getKey() + "/" + getDomain());
         switch (response) {
             case "ok":
-                list.add(getTime() + " | OK: " + getDomain(), 0);
+                list.add(getTime() + " | ALLOW: " + getDomain(), 0);
                 break;
             case "block":
                 list.add(getTime() + " | BLOCK: " + getDomain(), 0);
@@ -341,7 +393,6 @@ public class Display extends javax.swing.JFrame {
         lblPersonalStats = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("Block DEA Client by Sir Jacob");
 
         jLabel1.setText("Domain:");
 

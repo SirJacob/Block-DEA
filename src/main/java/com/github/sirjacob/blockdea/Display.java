@@ -42,7 +42,9 @@ import org.json.simple.parser.ParseException;
 /**
  *
  * @author https://github.com/SirJacob
- * @version 1.1 Changes:
+ * @version 1.2 Changelog:
+ * <p>
+ * 1.2: Updated pom.xml to enable creation of jar files. (12/17/2015)
  * <p>
  * 1.1: Added license to code, changed package name, added version tag, added
  * changelog, added comments/Javadoc, made {@link #getHiddenKey()} deprecated,
@@ -52,9 +54,9 @@ import org.json.simple.parser.ParseException;
  * added {@link #DEFAULT_TITLE} and {@link #appendTitle(String)}, added import
  * for JOptionPane, tweaked printing to GUI list in
  * {@link #statusToList(String, String, String, double, int, String, String,double)}.
- * (2015-11-16)
+ * (11/16/2015)
  * <p>
- * 1.0: First release. (2015-11-05)
+ * 1.0: First release. (11/05/2015)
  */
 public class Display extends javax.swing.JFrame {
 
@@ -216,7 +218,7 @@ public class Display extends javax.swing.JFrame {
      * remaining credits.
      * @param commercialCreditPercent Remaining credits in percent.
      */
-    @SuppressWarnings("UnusedAssignment")
+    @SuppressWarnings({"UnusedAssignment", "ValueOfIncrementOrDecrementUsed"})
     private void statusToList(String requestStatus, String apiKeyStatus, String serverTime, double version, int credits, String creditsTime, String commercialCreditStatus, double commercialCreditPercent) {
         String customMsg = "";
         String header1 = "~~~~~ Key Check ~~~~~";

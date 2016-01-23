@@ -1,25 +1,5 @@
 /*
- * The MIT License
- *
- * Copyright 2015-2016 Sir Jacob.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
+ * Copyright 2015-Present Cory Ugone (A.K.A. Sir Jacob)
  */
 package com.github.sirjacob.blockdea;
 
@@ -35,14 +15,22 @@ import java.util.Calendar;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
+import org.apache.commons.lang3.StringUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 /**
  *
- * @author https://github.com/SirJacob
- * @version 1.2 Changelog:
+ * @author Cory Ugone (A.K.A. Sir Jacob) <https://github.com/SirJacob>
+ * @version 1.3 Changelog:
+ * <p>
+ * 1.3: Fixed parsing of the commercial credit status percent, key check now
+ * prints server time over local time, credits remaining now shows the server
+ * time at which your credit balance was recalculated, calculations for
+ * commercial credit percent have been removed (never shown in GUI anyway),
+ * added more error handling, added {@link #preformCheckDomain()} to replace
+ * {@link #checkDomain()} (now deprecated). (01/22/2016)
  * <p>
  * 1.2: Updated pom.xml to enable creation of jar files. (12/17/2015)
  * <p>
@@ -126,8 +114,9 @@ public class Display extends javax.swing.JFrame {
             URL url = new URL(str);
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(url.openStream()));
             return bufferedReader.readLine();
-        } catch (IOException ex) {
-            Logger.getLogger(Display.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NullPointerException | IOException ex) {
+            JOptionPane.showMessageDialog(this, "Please be sure to remove any protocals/ports from the domain you are checking. Ex: Don't include http(s)://", "Domain Error", JOptionPane.ERROR_MESSAGE);
+            //Logger.getLogger(Display.class.getName()).log(Level.SEVERE, null, ex);
         }
         return null;
     }
@@ -192,10 +181,10 @@ public class Display extends javax.swing.JFrame {
         }
         String ct = (String) jo.get("credits_time");
         String ccs = (String) jo.get("commercial_credit_status");
-        String temp_commercial_credit_status_percent = (String) jo.get("commercial_credit_status_percent");
+        Object temp_commercial_credit_status_percent = jo.get("commercial_credit_status_percent");
         double ccsp = 0;
         if (temp_commercial_credit_status_percent != null) {
-            ccsp = Double.parseDouble(temp_commercial_credit_status_percent);
+            ccsp = Double.valueOf(String.valueOf(temp_commercial_credit_status_percent));
         }
         statusToList(rs, aks, st, v, credits, ct, ccs, ccsp);
     }
@@ -225,10 +214,10 @@ public class Display extends javax.swing.JFrame {
         int lineCount = 0;
         list.add(header1, lineCount++);
         list.add("Checking status on key... " + "(" + getKeyEnding() + ")", lineCount++);
-        list.add("Request Status: " + requestStatus.toUpperCase() + ", Version: " + version + ", Time: " + getTime(), lineCount++);
+        list.add("Request Status: " + requestStatus.toUpperCase() + ", Version: " + version + ", Server Time: " + serverTime, lineCount++);
         list.add("Key Status: " + apiKeyStatus.toUpperCase(), lineCount++);
         customMsg = "";
-        list.add("Credits Remaining: " + credits + " :: (Updated every 180 minutes)", lineCount++);
+        list.add("Credits Remaining: " + credits + " :: (Last Updated in Server Time: " + creditsTime + ")", lineCount++);
         if (commercialCreditStatus != null) {
             switch (commercialCreditStatus) {
                 case "good":
@@ -243,14 +232,15 @@ public class Display extends javax.swing.JFrame {
             }
             list.add("Credit Status: " + commercialCreditStatus.toUpperCase() + " :: " + customMsg, lineCount++);
             customMsg = "";
-            if (commercialCreditPercent == 1) {
-                customMsg = "100%";
+            /*            if (commercialCreditPercent == 1) {
+            customMsg = "100%";
             } else {
-                String strPercent = String.valueOf(commercialCreditPercent);
-                strPercent = strPercent.substring(2, strPercent.length());
-                customMsg = strPercent + "%";
+            String strPercent = String.valueOf(commercialCreditPercent);
+            strPercent = strPercent.substring(2, strPercent.length());
+            customMsg = strPercent + "%";
+            System.out.println(customMsg);
             }
-            customMsg = "";
+            customMsg = "";*/
         }
         list.add(null, lineCount++);
     }
@@ -260,6 +250,9 @@ public class Display extends javax.swing.JFrame {
      * domain (getDomain()) and adds its status to the list. Possible Responses:
      * ok, block, fail_key, fail_server, fail_input_domain,
      * fail_parameter_count, fail_key_low_credits (EasyAPI v0.2)
+     *
+     * @deprecated checkDomain does not validate that the API key is
+     * Alphanumeric. See {@link #preformCheckDomain()}.
      */
     private void checkDomain() {
         String response = getURLData("http://check.block-disposable-email.com/easyapi/txt/" + getKey() + "/" + getDomain());
@@ -366,7 +359,37 @@ public class Display extends javax.swing.JFrame {
         if ("ok.bdea.cc".equals(testingDomain) || "block.bdea.cc".equals(testingDomain)) {
             setDomain(testingDomain);
             enableBtn();
-            checkDomain();
+            preformCheckDomain();
+        }
+    }
+
+    /**
+     * Queries BDEA's EasyAPI (Simple Text Output Method) Checks the supplied
+     * domain (getDomain()) and adds its status to the list. Possible Responses:
+     * ok, block, fail_key, fail_server, fail_input_domain,
+     * fail_parameter_count, fail_key_low_credits (EasyAPI v0.2)
+     * <p>
+     * preformCheckDomain also validates that the API key is Alphanumeric.
+     */
+    private void preformCheckDomain() {
+        if (StringUtils.isAlphanumeric(getKey())) {
+            String response = getURLData("http://check.block-disposable-email.com/easyapi/txt/" + getKey() + "/" + getDomain());
+            if (response == null) {
+                return;
+            }
+            switch (response) {
+                case "ok":
+                    list.add(getTime() + " | ALLOW: " + getDomain(), 0);
+                    break;
+                case "block":
+                    list.add(getTime() + " | BLOCK: " + getDomain(), 0);
+                    break;
+                default:
+                    list.add(getTime() + " | FAILURE: " + response, 0);
+                    break;
+            }
+        } else {
+            showBadKeyError();
         }
     }
 
@@ -578,7 +601,7 @@ public class Display extends javax.swing.JFrame {
     }//GEN-LAST:event_btnTestBlockActionPerformed
 
     private void btnQueryActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnQueryActionPerformed
-        checkDomain();
+        preformCheckDomain();
     }//GEN-LAST:event_btnQueryActionPerformed
 
     private void btnCheckStatusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCheckStatusActionPerformed

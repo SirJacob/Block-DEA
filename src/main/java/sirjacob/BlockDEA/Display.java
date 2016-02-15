@@ -1,6 +1,3 @@
-/*
- * Copyright 2015-Present Cory Ugone (A.K.A. Sir Jacob)
- */
 package sirjacob.BlockDEA;
 
 import java.awt.Desktop;
@@ -22,7 +19,7 @@ import org.json.simple.parser.ParseException;
 
 /**
  *
- * @author Cory Ugone (A.K.A. Sir Jacob) <https://github.com/SirJacob>
+ * @author Sir Jacob <https://github.com/SirJacob>
  * @version 1.3 Changelog:
  * <p>
  * 1.3: Fixed parsing of the commercial credit status percent, key check now
